@@ -11,13 +11,6 @@ import org.springframework.security.web.SecurityFilterChain;
 /*
  * Copyright (c) 2026 Mahesh Shet
  * Licensed under the MIT License.
- *
- * FIX 1: Added `throws Exception` — required because HttpSecurity throws checked exceptions.
- * FIX 2: Added /react/** to PUBLIC_PATH so the React bundle (JS/CSS assets) loads
- *         without authentication.
- * NOTE:  CSRF is kept ON. The React app reads the CSRF token from the <meta> tags
- *        injected by the react-app.html template and includes it in POST/PUT headers.
- *        This is why we do NOT disable CSRF for /api/** — it would open CSRF attacks.
  */
 
 @Configuration
@@ -26,16 +19,19 @@ public class SpringConfig {
 
     private static final String[] PUBLIC_PATH = {
             "/login",
-            "/css/**",
-            "/images/**",
-            "/js/**",
-            "/react/**",   // React build artifacts
+            "/react/**",   // React build artifacts (JS/CSS/assets)
             "/error"
     };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Disable CSRF for /api/** — React SPA on the same origin
+                // uses session cookies, so same-site policy protects us.
+                // CSRF protection is kept for the /login form POST.
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**")
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATH).permitAll()
                         .anyRequest().authenticated()
@@ -44,10 +40,12 @@ public class SpringConfig {
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/dashboard", true)
-                        .permitAll())
+                        .permitAll()
+                )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
-                        .permitAll());
+                        .permitAll()
+                );
 
         return http.build();
     }
