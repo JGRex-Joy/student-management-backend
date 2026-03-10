@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,5 +66,17 @@ public class StudentController {
             return ResponseEntity.badRequest().body("Email already exists");
         }
         return ResponseEntity.ok(studentService.updateStudent(id, dto));
+    }
+
+    /**
+     * DELETE /api/students/{id}
+     * Cascade delete: because Students.enrollments has CascadeType.ALL + orphanRemoval=true,
+     * all Enrollment rows for this student are deleted automatically by JPA.
+     * This fixes the "ghost enrollments" bug when a student record is removed.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+        return ResponseEntity.noContent().build();
     }
 }

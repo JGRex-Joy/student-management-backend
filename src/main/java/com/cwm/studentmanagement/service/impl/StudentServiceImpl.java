@@ -13,9 +13,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.cwm.studentmanagement.dto.CourseDTO;
 import com.cwm.studentmanagement.dto.StudentDTO;
-import com.cwm.studentmanagement.model.Courses;
 import com.cwm.studentmanagement.model.Students;
 import com.cwm.studentmanagement.repository.StudentRepository;
 import com.cwm.studentmanagement.service.StudentService;
@@ -28,87 +26,78 @@ import com.cwm.studentmanagement.service.StudentService;
 @Service
 @Transactional
 public class StudentServiceImpl implements StudentService {
-	
-	private static final Logger log = LoggerFactory.getLogger(StudentServiceImpl.class);
-	
-	private final StudentRepository studentRepository;
-	private final ModelMapper mapper;
-	
-	public StudentServiceImpl(StudentRepository studentRepository, ModelMapper mapper) {
-		this.studentRepository = studentRepository;
-		this.mapper = mapper;
-	}
 
-	@Override
-	public boolean existsByEmailIgnoreCase(String email) {
-		log.info("email from create student");
-		
-		return studentRepository.existsByEmailIgnoreCase(email);
-	}
+    private static final Logger log = LoggerFactory.getLogger(StudentServiceImpl.class);
 
-	@Override
-	public StudentDTO createStudent(StudentDTO studentDTO) {
-		log.info("saving student data");
-		
-		Students students = mapper.map(studentDTO, Students.class);
-		Students saved = studentRepository.save(students);
-		
-		return mapper.map(saved, StudentDTO.class);
-	}
+    private final StudentRepository studentRepository;
+    private final ModelMapper mapper;
 
-	@Override
-	public Page<StudentDTO> getStudents(int page, int size) {
-		log.info("list of student from: {}", page);
-		
-		PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Direction.DESC, "id"));
-		return studentRepository.findByActiveTrue(pageRequest)
-				.map(student -> mapper.map(student, StudentDTO.class));
-	}
+    public StudentServiceImpl(StudentRepository studentRepository, ModelMapper mapper) {
+        this.studentRepository = studentRepository;
+        this.mapper = mapper;
+    }
 
-	@Override
-	@Transactional(readOnly = true)
-	public StudentDTO getStudentById(Long id) {
-		Students student = studentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("No student found"));
+    @Override
+    public boolean existsByEmailIgnoreCase(String email) {
+        return studentRepository.existsByEmailIgnoreCase(email);
+    }
 
-			return mapper.map(student, StudentDTO.class);
-	}
+    @Override
+    public StudentDTO createStudent(StudentDTO studentDTO) {
+        log.info("saving student data");
+        Students students = mapper.map(studentDTO, Students.class);
+        Students saved = studentRepository.save(students);
+        return mapper.map(saved, StudentDTO.class);
+    }
 
-	@Override
-	public boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id) {
-		log.info("email from update student");
-		
-		return studentRepository.existsByEmailIgnoreCaseAndIdNot(email, id);
-	}
+    @Override
+    @Transactional(readOnly = true)
+    public Page<StudentDTO> getStudents(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Direction.DESC, "id"));
+        return studentRepository.findByActiveTrue(pageRequest)
+                .map(student -> mapper.map(student, StudentDTO.class));
+    }
 
-	@Override
-	public StudentDTO updateStudent(Long id, StudentDTO studentDTO) {
-		Students student = studentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("No student found"));
-		
-		mapper.map(studentDTO, student);
-		
-		Students updated = studentRepository.save(student);
-		
-		return mapper.map(updated, StudentDTO.class);
-	}
-	
-	@Override
-	public List<StudentDTO> getAllStudents() {
-		return studentRepository.findByActiveTrue().stream()
-				.map(student -> mapper.map(student, StudentDTO.class))
-				.collect(Collectors.toList());
-	}
+    @Override
+    @Transactional(readOnly = true)
+    public StudentDTO getStudentById(Long id) {
+        Students student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No student found"));
+        return mapper.map(student, StudentDTO.class);
+    }
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+    @Override
+    public boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id) {
+        return studentRepository.existsByEmailIgnoreCaseAndIdNot(email, id);
+    }
+
+    @Override
+    public StudentDTO updateStudent(Long id, StudentDTO studentDTO) {
+        Students student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No student found"));
+        mapper.map(studentDTO, student);
+        Students updated = studentRepository.save(student);
+        return mapper.map(updated, StudentDTO.class);
+    }
+
+    @Override
+    public List<StudentDTO> getAllStudents() {
+        return studentRepository.findByActiveTrue().stream()
+                .map(student -> mapper.map(student, StudentDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Hard-deletes the student record.
+     * Students.enrollments has CascadeType.ALL + orphanRemoval=true, so JPA
+     * will automatically remove all Enrollment rows for this student first,
+     * preventing "ghost enrollment" entries in the enrollments view.
+     */
+    @Override
+    public void deleteStudent(Long id) {
+        log.info("deleting student id: {}", id);
+        Students student = studentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No student found with id: " + id));
+        studentRepository.delete(student);
+    }
 }
