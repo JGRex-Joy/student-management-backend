@@ -18,11 +18,6 @@ import com.cwm.studentmanagement.model.Students;
 import com.cwm.studentmanagement.repository.StudentRepository;
 import com.cwm.studentmanagement.service.StudentService;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @Service
 @Transactional
 public class StudentServiceImpl implements StudentService {
@@ -87,12 +82,6 @@ public class StudentServiceImpl implements StudentService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Hard-deletes the student record.
-     * Students.enrollments has CascadeType.ALL + orphanRemoval=true, so JPA
-     * will automatically remove all Enrollment rows for this student first,
-     * preventing "ghost enrollment" entries in the enrollments view.
-     */
     @Override
     public void deleteStudent(Long id) {
         log.info("deleting student id: {}", id);

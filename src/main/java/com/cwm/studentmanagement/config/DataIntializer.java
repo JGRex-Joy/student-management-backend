@@ -8,11 +8,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.cwm.studentmanagement.model.Users;
 import com.cwm.studentmanagement.repository.UsersRepository;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @Configuration
 public class DataIntializer {
 	

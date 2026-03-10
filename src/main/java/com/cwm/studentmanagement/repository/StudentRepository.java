@@ -12,11 +12,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.cwm.studentmanagement.model.Students;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 public interface StudentRepository extends JpaRepository<Students, Long> {
 	
 	boolean existsByEmailIgnoreCase(String email);

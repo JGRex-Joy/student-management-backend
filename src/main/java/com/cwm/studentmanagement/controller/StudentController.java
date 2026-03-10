@@ -19,11 +19,6 @@ import com.cwm.studentmanagement.service.StudentService;
 
 import jakarta.validation.Valid;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
@@ -68,12 +63,6 @@ public class StudentController {
         return ResponseEntity.ok(studentService.updateStudent(id, dto));
     }
 
-    /**
-     * DELETE /api/students/{id}
-     * Cascade delete: because Students.enrollments has CascadeType.ALL + orphanRemoval=true,
-     * all Enrollment rows for this student are deleted automatically by JPA.
-     * This fixes the "ghost enrollments" bug when a student record is removed.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         studentService.deleteStudent(id);

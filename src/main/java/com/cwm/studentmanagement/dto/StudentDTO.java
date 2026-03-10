@@ -3,11 +3,6 @@ package com.cwm.studentmanagement.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 public class StudentDTO {
 	
 	private Long id;

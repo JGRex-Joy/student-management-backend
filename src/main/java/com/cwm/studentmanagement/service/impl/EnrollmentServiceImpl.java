@@ -25,18 +25,6 @@ import com.cwm.studentmanagement.repository.EnrollmentRepository;
 import com.cwm.studentmanagement.repository.StudentRepository;
 import com.cwm.studentmanagement.service.EnrollmentService;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- *
- * FIX 1: Added @Transactional at class level — the service was mutating data
- *         (saving enrollments) without any transaction boundary, risking partial
- *         writes and dirty state if an exception occurred mid-loop.
- *
- * FIX 2: enrollStudentToCourses — moved enrollmentRepository.save() calls inside
- *         a single transaction so the entire enrollment batch is atomic.
- */
-
 @Service
 @Transactional
 public class EnrollmentServiceImpl implements EnrollmentService {

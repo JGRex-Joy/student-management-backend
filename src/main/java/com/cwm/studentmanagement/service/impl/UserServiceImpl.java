@@ -9,11 +9,6 @@ import org.springframework.stereotype.Service;
 import com.cwm.studentmanagement.model.Users;
 import com.cwm.studentmanagement.repository.UsersRepository;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @Service
 public class UserServiceImpl implements UserDetailsService {
 	

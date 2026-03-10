@@ -13,11 +13,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @Entity
 @Table(name="enrollment")
 public class Enrollment {
@@ -61,25 +56,4 @@ public class Enrollment {
 	public void setCourse(Courses course) {
 		this.course = course;
 	}
-
-	public LocalDateTime getEnrolledDate() {
-		return enrolledDate;
-	}
-
-	public void setEnrolledDate(LocalDateTime enrolledDate) {
-		this.enrolledDate = enrolledDate;
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
 }

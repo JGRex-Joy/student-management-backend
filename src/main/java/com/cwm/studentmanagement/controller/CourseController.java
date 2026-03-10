@@ -18,13 +18,6 @@ import com.cwm.studentmanagement.service.CourseService;
 
 import jakarta.validation.Valid;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- *
- * REST API endpoints consumed by the React frontend.
- */
-
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {

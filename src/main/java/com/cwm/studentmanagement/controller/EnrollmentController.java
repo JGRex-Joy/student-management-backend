@@ -16,11 +16,6 @@ import com.cwm.studentmanagement.service.EnrollmentService;
 
 import jakarta.validation.Valid;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 @RestController
 @RequestMapping("/api/enrollments")
 public class EnrollmentController {

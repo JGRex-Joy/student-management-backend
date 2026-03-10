@@ -15,17 +15,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- *
- * Spring Boot = REST API only. React/Vite handles ALL frontend routing.
- *
- * NO loginPage() — Spring не рендерит никакую страницу.
- * POST /login  → Spring Security обрабатывает форму, возвращает 200 JSON
- * GET  /login  → не существует на бэкенде, React сам показывает Login компонент
- */
-
 @Configuration
 @EnableWebSecurity
 public class SpringConfig {

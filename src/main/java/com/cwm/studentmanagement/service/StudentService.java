@@ -6,11 +6,6 @@ import org.springframework.data.domain.Page;
 
 import com.cwm.studentmanagement.dto.StudentDTO;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- */
-
 public interface StudentService {
 
     boolean existsByEmailIgnoreCase(String email);
@@ -27,6 +22,5 @@ public interface StudentService {
 
     List<StudentDTO> getAllStudents();
 
-    /** Deletes student and all their enrollments (cascade). */
     void deleteStudent(Long id);
 }

@@ -20,16 +20,6 @@ import com.cwm.studentmanagement.model.Courses;
 import com.cwm.studentmanagement.repository.CourseRepository;
 import com.cwm.studentmanagement.service.CourseService;
 
-/*
- * Copyright (c) 2026 Mahesh Shet
- * Licensed under the MIT License.
- *
- * FIX: updateCourse — when ModelMapper maps CourseDTO → existing Courses entity,
- *      it would overwrite `id` with the value from DTO (which can be null or wrong).
- *      Now we skip the `id` field during update mapping to prevent accidental id overwrite.
- *      Also skips the `enrollments` collection which ModelMapper has no business touching.
- */
-
 @Service
 @Transactional
 public class CourseServiceImpl implements CourseService {
@@ -43,8 +33,6 @@ public class CourseServiceImpl implements CourseService {
         this.courseRepository = courseRepository;
         this.mapper = mapper;
 
-        // Configure a dedicated type map for DTO → entity updates that skips
-        // immutable/managed fields so they are never accidentally overwritten.
         TypeMap<CourseDTO, Courses> updateMap =
                 mapper.createTypeMap(CourseDTO.class, Courses.class);
         updateMap.addMappings(m -> {
