@@ -1,152 +1,71 @@
 package com.cwm.studentmanagement.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.cwm.studentmanagement.dto.CourseDTO;
 import com.cwm.studentmanagement.service.CourseService;
+
 import jakarta.validation.Valid;
 
 /*
  * Copyright (c) 2026 Mahesh Shet
  * Licensed under the MIT License.
+ *
+ * REST API endpoints consumed by the React frontend.
  */
 
-@Controller
-@RequestMapping("/course")
+@RestController
+@RequestMapping("/api/courses")
 public class CourseController {
-	
-	private static final Logger log = LoggerFactory.getLogger(CourseController.class);
-	
-	private final CourseService courseService;
-	
-	CourseController(CourseService courseService) {
-		this.courseService = courseService;
-	}
-	
-	@GetMapping("/new")
-	public String showCreateCourse(Model model) {
-		log.info("Get /course/new - showing create cousre page.");
-		model.addAttribute("courseDto", new CourseDTO());
-		return "add-course";
-	}
-	
-	
-	@GetMapping("/list")
-	public String listCourses(@RequestParam(defaultValue = "0") int page,
-							@RequestParam(defaultValue = "3") int size,
-							Model model,
-							@RequestParam(value="message", required = false) String message) 
-	{
-		log.info("Get /course/list - showing cousre list page.");
-	
-		Page<CourseDTO> courses = courseService.getCourses(page, size);
-		model.addAttribute("courses", courses);
-		model.addAttribute("message", message);
-		
-		
-		return "courses";
-	}
-	
 
-	@PostMapping
-	public String createCourse(@Valid @ModelAttribute("courseDto") CourseDTO courseDTO,
-			BindingResult bindingResult,
-			Model model,
-			RedirectAttributes redirectAttributes) {
-		
-		log.info("Post /course - create course request received.");
-		
-		if(bindingResult.hasErrors()) {
-			log.error("Post /course - page return due to validation error.");
-			return "add-course";
-		}
-		
-		if(courseService.existsByCourseCode(courseDTO.getCourseCode())) {
-			log.error("Post /course - Code must be unique.");
-			
-			bindingResult.rejectValue("courseCode", null, "Code must be unique");
-			return "add-course";
-		}
-		
-		courseService.createCourse(courseDTO);
-		redirectAttributes.addAttribute("message", "Course is created successfully!!");
-		
-		log.info("Post /course - create course successfully created.");
-		
-		return "redirect:/course/list";
-	}
-	
-	
-	@GetMapping("/{id}")
-	public String getCourseById(@PathVariable Long id, Model model) {
-		CourseDTO course = courseService.getCourseById(id);
-		model.addAttribute("course", course);
-		
-		return "view-course";
-		
-	}
-	
-	@GetMapping("/{id}/edit")
-	public String editCourse(@PathVariable Long id, Model model) {
-		CourseDTO course = courseService.getCourseById(id);
-		model.addAttribute("courseDto", course);
-		
-		return "edit-course";
-	}
-	
-	
-	@PostMapping("/{id}/update")
-	public String updateCourse(@PathVariable Long id, 
-			@Valid @ModelAttribute("courseDto") CourseDTO courseDTO,
-			BindingResult bindingResult,
-			Model model,
-			RedirectAttributes redirectAttributes) {
-		
-		log.info("Post /{id}/update - update course request received. {}", id);
-		
-		if(bindingResult.hasErrors()) {
-			log.error("Post /{id}/update - page return due to validation error.");
-			return "edit-course";
-		}
-		
-		if(courseService.existsByCourseCodeAndIdNot(courseDTO.getCourseCode(), id)) {
-			log.error("Post /{id}/update - Code must be unique.");
-			
-			bindingResult.rejectValue("courseCode", null, "Code must be unique");
-			return "edit-course";
-		}
-		
-		courseService.updateCourse(id, courseDTO);
-		redirectAttributes.addAttribute("message", "Course is updated successfully!!");
-		
-		log.info("Post /{id}/update - updated course successfully.");
-		
-		return "redirect:/course/list";
-		
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+    private final CourseService courseService;
 
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<CourseDTO>> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        return ResponseEntity.ok(courseService.getCourses(page, size));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<CourseDTO>> all() {
+        return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CourseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getCourseById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<?> create(@Valid @RequestBody CourseDTO dto) {
+        if (courseService.existsByCourseCode(dto.getCourseCode())) {
+            return ResponseEntity.badRequest().body("Course code already exists");
+        }
+        return ResponseEntity.ok(courseService.createCourse(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id,
+                                    @Valid @RequestBody CourseDTO dto) {
+        if (courseService.existsByCourseCodeAndIdNot(dto.getCourseCode(), id)) {
+            return ResponseEntity.badRequest().body("Course code already exists");
+        }
+        return ResponseEntity.ok(courseService.updateCourse(id, dto));
+    }
 }

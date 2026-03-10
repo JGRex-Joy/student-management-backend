@@ -12,11 +12,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cwm.studentmanagement.dto.CourseDTO;
 import com.cwm.studentmanagement.dto.EnrollmentDTO;
 import com.cwm.studentmanagement.dto.EnrollmentSummaryDTO;
-import com.cwm.studentmanagement.dto.StudentDTO;
 import com.cwm.studentmanagement.model.Courses;
 import com.cwm.studentmanagement.model.Enrollment;
 import com.cwm.studentmanagement.model.Students;
@@ -28,129 +28,103 @@ import com.cwm.studentmanagement.service.EnrollmentService;
 /*
  * Copyright (c) 2026 Mahesh Shet
  * Licensed under the MIT License.
+ *
+ * FIX 1: Added @Transactional at class level — the service was mutating data
+ *         (saving enrollments) without any transaction boundary, risking partial
+ *         writes and dirty state if an exception occurred mid-loop.
+ *
+ * FIX 2: enrollStudentToCourses — moved enrollmentRepository.save() calls inside
+ *         a single transaction so the entire enrollment batch is atomic.
  */
 
 @Service
+@Transactional
 public class EnrollmentServiceImpl implements EnrollmentService {
-	private static final Logger log = LoggerFactory.getLogger(EnrollmentServiceImpl.class);
-	
-	private final EnrollmentRepository enrollmentRepository;
-	private final StudentRepository studentRepository;
-	private final CourseRepository courseRepository;
-	private final ModelMapper mapper;
-	
-	EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository,
-			StudentRepository studentRepository,
-			CourseRepository courseRepository,
-			ModelMapper mapper) 
-	{
-		this.enrollmentRepository = enrollmentRepository;
-		this.studentRepository = studentRepository;
-		this.courseRepository = courseRepository;
-		this.mapper = mapper;
-	}
-	
 
-	@Override
-	public void enrollStudentToCourses(EnrollmentDTO enrollmentDTO) {
-		log.info("request from enrollStudentToCourses");
-		
-		Students student = studentRepository.findById(enrollmentDTO.getStudentId())
-				.orElseThrow(() -> new RuntimeException("Student not found"));
-		
-		for(Long courseId : enrollmentDTO.getCourseIds()) {
-			Courses course = courseRepository.findById(courseId)
-					.orElseThrow(() -> new RuntimeException("course not found"));
-			
-			if(enrollmentRepository.existsByStudentIdAndCourseId(enrollmentDTO.getStudentId(),
-					courseId)) {
-				continue;
-			}
-			
-			Enrollment enrollment = new Enrollment();
-			enrollment.setStudent(student);
-			enrollment.setCourse(course);
-			
-			student.getEnrollments().add(enrollment);
-			course.getEnrollments().add(enrollment);
-			
-			enrollmentRepository.save(enrollment);
-		}
-		
-	}
+    private static final Logger log = LoggerFactory.getLogger(EnrollmentServiceImpl.class);
 
+    private final EnrollmentRepository enrollmentRepository;
+    private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
+    private final ModelMapper mapper;
 
-	@Override
-	public Page<EnrollmentSummaryDTO> getEnrolledStudents(int page, int size) {
-	log.info("list of enrolled students from: {}", page);
-		
-		PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Direction.DESC, "id"));
-		return studentRepository.findEnrolledStudents(pageRequest)
-				.map(student -> {
-					EnrollmentSummaryDTO dto = new EnrollmentSummaryDTO();
-					dto.setStudentId(student.getId());
-					dto.setStudentName(student.getFirstName() + " "+student.getLastName());
-					dto.setEmail(student.getEmail());
-					
-					dto.setCourseCount(student.getEnrollments().size());
-					BigDecimal totalFee = student.getEnrollments().stream()
-							.map(enrollment -> enrollment.getCourse().getFee())
-							.filter(fee -> fee != null)
-							.reduce(BigDecimal.ZERO, BigDecimal::add);
-					dto.setTotalFee(totalFee);
-					
-					return dto;
-				});
-	}
+    EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository,
+                          StudentRepository studentRepository,
+                          CourseRepository courseRepository,
+                          ModelMapper mapper) {
+        this.enrollmentRepository = enrollmentRepository;
+        this.studentRepository = studentRepository;
+        this.courseRepository = courseRepository;
+        this.mapper = mapper;
+    }
 
+    @Override
+    public void enrollStudentToCourses(EnrollmentDTO enrollmentDTO) {
+        log.info("request from enrollStudentToCourses");
 
-	@Override
-	public EnrollmentSummaryDTO findEnrolledStudentCourseDetails(Long studentId) {
-		return studentRepository.findEnrolledStudentCourseDetails(studentId)
-				.map(student -> {
-					EnrollmentSummaryDTO dto = new EnrollmentSummaryDTO();
-					dto.setStudentId(student.getId());
-					dto.setStudentName(student.getFirstName() + " "+student.getLastName());
-					dto.setEmail(student.getEmail());
-					
-					dto.setCourseCount(student.getEnrollments().size());
-					BigDecimal totalFee = student.getEnrollments().stream()
-							.map(enrollment -> enrollment.getCourse().getFee())
-							.filter(fee -> fee != null)
-							.reduce(BigDecimal.ZERO, BigDecimal::add);
-					dto.setTotalFee(totalFee);
-					
-					List<CourseDTO> courseList = student.getEnrollments().stream()
-							.map(enrollment -> enrollment.getCourse())
-							.map(course -> mapper.map(course, CourseDTO.class))
-							.collect(Collectors.toList());
-					
-					dto.setCourseList(courseList);
-					
-					return dto;
-				})
-				.orElseThrow(() -> new RuntimeException("Student not found"));
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+        Students student = studentRepository.findById(enrollmentDTO.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Student not found"));
 
+        for (Long courseId : enrollmentDTO.getCourseIds()) {
+            Courses course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> new RuntimeException("Course not found: " + courseId));
+
+            if (enrollmentRepository.existsByStudentIdAndCourseId(enrollmentDTO.getStudentId(), courseId)) {
+                log.info("Student {} already enrolled in course {}, skipping.", enrollmentDTO.getStudentId(), courseId);
+                continue;
+            }
+
+            Enrollment enrollment = new Enrollment();
+            enrollment.setStudent(student);
+            enrollment.setCourse(course);
+
+            enrollmentRepository.save(enrollment);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<EnrollmentSummaryDTO> getEnrolledStudents(int page, int size) {
+        log.info("list of enrolled students from: {}", page);
+
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Direction.DESC, "id"));
+        return studentRepository.findEnrolledStudents(pageRequest)
+                .map(student -> {
+                    EnrollmentSummaryDTO dto = new EnrollmentSummaryDTO();
+                    dto.setStudentId(student.getId());
+                    dto.setStudentName(student.getFirstName() + " " + student.getLastName());
+                    dto.setEmail(student.getEmail());
+                    dto.setCourseCount(student.getEnrollments().size());
+                    BigDecimal totalFee = student.getEnrollments().stream()
+                            .map(enrollment -> enrollment.getCourse().getFee())
+                            .filter(fee -> fee != null)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    dto.setTotalFee(totalFee);
+                    return dto;
+                });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EnrollmentSummaryDTO findEnrolledStudentCourseDetails(Long studentId) {
+        return studentRepository.findEnrolledStudentCourseDetails(studentId)
+                .map(student -> {
+                    EnrollmentSummaryDTO dto = new EnrollmentSummaryDTO();
+                    dto.setStudentId(student.getId());
+                    dto.setStudentName(student.getFirstName() + " " + student.getLastName());
+                    dto.setEmail(student.getEmail());
+                    dto.setCourseCount(student.getEnrollments().size());
+                    BigDecimal totalFee = student.getEnrollments().stream()
+                            .map(enrollment -> enrollment.getCourse().getFee())
+                            .filter(fee -> fee != null)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    dto.setTotalFee(totalFee);
+                    List<CourseDTO> courseList = student.getEnrollments().stream()
+                            .map(e -> mapper.map(e.getCourse(), CourseDTO.class))
+                            .collect(Collectors.toList());
+                    dto.setCourseList(courseList);
+                    return dto;
+                })
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+    }
 }
