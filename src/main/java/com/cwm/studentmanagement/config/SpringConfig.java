@@ -29,12 +29,10 @@ public class SpringConfig {
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
-                // Все неавторизованные запросы к /api → 401, не редирект
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .formLogin(form -> form
-                        // НЕТ .loginPage() — Spring не пытается рендерить GET /login
                         .loginProcessingUrl("/login")
                         .successHandler((req, res, auth) -> {
                             res.setStatus(200);
@@ -64,7 +62,7 @@ public class SpringConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://student-management-frontend-eight-lac.vercel.app/"));
+        config.setAllowedOrigins(List.of("https://student-management-frontend-eight-lac.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
